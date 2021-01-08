@@ -1,0 +1,19 @@
+CC5X Version 3.1C, Copyright (c) B Knudsen Data, Norway 1992-2001
+ --> FREE edition, 8-16 bit int, 24 bit float, 1k code, reduced optim.
+F:\PRODUCT\SMART\PROGRAM\SMART.C:
+ 27. Jul 2002  15:54
+ Chip = 16C711
+ RAM: 00h : -------- ----==== ===..... ....****
+ RAM: 20h : ******** ******** ******** ********
+ RAM: 40h : ******** ********
+RAM usage: 16 bytes (7 local), 52 bytes free
+ File 'SMART.fcs'
+ Optimizing - removed 12 instructions (-1 %)
+ File 'SMART.var'
+ File 'SMART.asm'
+ File 'SMART.lst'
+ File 'SMART.cod'
+ File 'SMART.occ'
+ File 'SMART.hex'
+Total of 504 code words (49 %)
+ * Estimated CODE SIZE of licensed edition: 489 code words (-15)

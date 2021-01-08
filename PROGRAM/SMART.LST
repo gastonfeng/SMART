@@ -1,0 +1,1162 @@
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 1
+
+ADDR CODE  LINE SOURCE
+
+           0001 
+           0002 ; CC5X Version 3.1C, Copyright (c) B Knudsen Data
+           0003 ; C compiler for the PICmicro family
+           0004 ; ************  27. Jul 2002  15:54  *************
+           0005 
+           0006 	processor  16C711
+           0007 	radix  DEC
+           0008 
+     0001  0009 TMR0        EQU   0x01
+     0081  0010 OPTION_REG  EQU   0x81
+     0002  0011 PCL         EQU   0x02
+     0003  0012 STATUS      EQU   0x03
+     0085  0013 TRISA       EQU   0x85
+     0086  0014 TRISB       EQU   0x86
+     000A  0015 PCLATH      EQU   0x0A
+     000B  0016 INTCON      EQU   0x0B
+     0000  0017 Carry       EQU   0
+     0002  0018 Zero_       EQU   2
+     0005  0019 RP0         EQU   5
+     0001  0020 INTF        EQU   1
+     0002  0021 T0IF        EQU   2
+     0004  0022 INTE        EQU   4
+     0008  0023 ADCON0      EQU   0x08
+     0009  0024 ADRES       EQU   0x09
+     0088  0025 ADCON1      EQU   0x88
+     0002  0026 GO          EQU   2
+     0004  0027 PWMOUT      EQU   4
+     0003  0028 LOAD        EQU   3
+     0002  0029 LED_CHARGE  EQU   2
+     0002  0030 LEDR        EQU   2
+     0001  0031 LEDG        EQU   1
+     0013  0032 PWMDESIRED  EQU   0x13
+     0014  0033 PWMHELP     EQU   0x14
+     0015  0034 PWMMAX      EQU   0x15
+     0016  0035 delay       EQU   0x16
+     0017  0036 delayf      EQU   0x17
+     0018  0037 delayl      EQU   0x18
+     0019  0038 delaym      EQU   0x19
+     001A  0039 ledstatus   EQU   0x1A
+     001B  0040 voltage     EQU   0x1B
+     000C  0041 STACKW      EQU   0x0C
+     000D  0042 STACKS      EQU   0x0D
+     000E  0043 sum         EQU   0x0E
+     0010  0044 temp        EQU   0x10
+     0011  0045 i           EQU   0x11
+     0012  0046 index       EQU   0x12
+           0047 
+0000 29E1  0048 	GOTO main
+           0049 
+           0050   ; FILE F:\PRODUCT\SMART\PROGRAM\SMART.C
+           0051 			;/********************************/
+           0052 			;/*	PV charge controller	*/
+           0053 			;/*	Hardware Ver:2000.3.12	*/
+           0054 			;/*	Software Version:V1.00	*/
+           0055 			;/*	program by:fengjiantao	*/
+           0056 			;/*	2000.11.17		*/
+           0057 			;/*	filename:smart.c	*/
+           0058 			;/********************************/
+           0059 			;#include "16C711.H"
+           0060 			;#include "int16cxx.h"
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 2
+
+ADDR CODE  LINE SOURCE
+
+           0061 			;
+           0062 			;
+           0063 			;#define TEMP_COMP
+           0064 			;
+           0065 			;//	Hardware configuration
+           0066 			;
+           0067 			;#pragma bit PWMOUT @ 6.4		//Âö¿íÊä³ö¿Ú
+           0068 			;#pragma bit LOAD @ 5.3			//¸ºÔØ¿ØÖÆ¿Ú
+           0069 			;
+           0070 			;#pragma bit LED_CHARGE @ 5.2	//³äµçÖ¸Ê¾µÆ
+           0071 			;#pragma bit LEDR	@ 6.2		//µçÆ½Ö¸Ê¾µÆ
+           0072 			;#pragma bit LEDG	@ 6.1		//µçÆ½Ö¸Ê¾µÆ
+           0073 			;
+           0074 			;//	PWM-module-constant
+           0075 			;#define PWMADJUSTVAL 22			//Âö¿íµ÷ÕûÖµ
+           0076 			;
+           0077 			;#define PWMMAXVAL	29			//×î´ó¼ÆÊýÂö¿í
+           0078 			;
+           0079 			;#define HVD	214	//14.2V,2.4k//1k,³äµç½ØÖ¹µã	
+           0080 			;
+           0081 			;#define FULL	193	//12.8V,µçÆ¿ÈÝÁ¿Âú
+           0082 			;
+           0083 			;#define MID	180		//µçÆ¿ÈÝÁ¿ÖÐ
+           0084 			;
+           0085 			;#define LOW	158	//10.5V£¬µçÆ¿Ç·Ñ¹
+           0086 			;
+           0087 			;#define DELAYTIMES 150	//×´Ì¬¸Ä±äÑÓ³ÙÊ±¼ä
+           0088 			;
+           0089 			;//	variable define
+           0090 			;unsigned char PWMDESIRED,PWMHELP,PWMMAX,delay,delayf,delayl,delaym,ledstatus,vo
+                   ltage;
+           0091 			;//Âö¿íÖµ£¬¸¨Öú±äÁ¿£¬¸¨Öú±äÁ¿£¬Âö¿íµ÷ÕûÑÓÊ±£¬Ö¸Ê¾±ä»¯ÑÓÊ±£¬Ö¸Ê¾±ä»¯ÑÓÊ±£¬Ö¸Ê¾±ä»
+                   ¯ÑÓÊ±£¬Ö¸Ê¾µÆ×´Ì¬£¬Ðîµç³ØµçÑ¹
+           0092 			;
+           0093 			;unsigned char comp_value(unsigned char index);
+           0094 			;
+           0095 			;#pragma origin = 4
+     0000  0096 	ORG 0x0004
+           0097 			;
+           0098 			;interrupt int_server( void)
+           0099 			;{
+           0100 int_server
+           0101 			;	unsigned char STACKW,STACKS;
+           0102 			;	#asm
+           0103 			;	btfsc INTCON,INTF	
+0004 188B  0104 	BTFSC 0x0B,INTF
+           0105 			;	goto OVERINT
+0005 286E  0106 	GOTO  m006
+           0107 			;PwmInt
+           0108 			;	movwf STACKW
+0006 008C  0109 	MOVWF STACKW
+           0110 			;	swapf STACKW,F
+0007 0E8C  0111 	SWAPF STACKW,1
+           0112 			;	swapf STATUS,W
+0008 0E03  0113 	SWAPF STATUS,W
+           0114 			;	movwf STACKS
+0009 008D  0115 	MOVWF STACKS
+           0116 			;	bcf INTCON,T0IF
+000A 110B  0117 	BCF   0x0B,T0IF
+           0118 			;	btfsc PORTB,PWMOUT
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 3
+
+ADDR CODE  LINE SOURCE
+
+000B 1A06  0119 	BTFSC 0x06,PWMOUT
+           0120 			;	goto Lowpulse
+000C 283E  0121 	GOTO  m003
+           0122 			;Highpulse
+           0123 			;	comf PWMDESIRED,W
+000D 0913  0124 	COMF  PWMDESIRED,W
+           0125 			;	movwf PWMHELP
+000E 0094  0126 	MOVWF PWMHELP
+           0127 			;	addwf PWMMAX,F
+000F 0795  0128 	ADDWF PWMMAX,1
+           0129 			;	btfss STATUS,Carry
+0010 1C03  0130 	BTFSS 0x03,Carry
+           0131 			;	goto HighImpInt
+0011 2835  0132 	GOTO  m001
+           0133 			;HighImpShrt
+           0134 			;	movf PWMMAX,W
+0012 0815  0135 	MOVF  PWMMAX,W
+           0136 			;	addwf PCL,F
+0013 0782  0137 	ADDWF PCL,1
+           0138 			;	bsf PORTB,PWMOUT
+0014 1606  0139 	BSF   0x06,PWMOUT
+           0140 			;	bsf PORTB,PWMOUT
+0015 1606  0141 	BSF   0x06,PWMOUT
+           0142 			;	bsf PORTB,PWMOUT
+0016 1606  0143 	BSF   0x06,PWMOUT
+           0144 			;	bsf PORTB,PWMOUT
+0017 1606  0145 	BSF   0x06,PWMOUT
+           0146 			;	bsf PORTB,PWMOUT
+0018 1606  0147 	BSF   0x06,PWMOUT
+           0148 			;	bsf PORTB,PWMOUT
+0019 1606  0149 	BSF   0x06,PWMOUT
+           0150 			;	bsf PORTB,PWMOUT
+001A 1606  0151 	BSF   0x06,PWMOUT
+           0152 			;	bsf PORTB,PWMOUT
+001B 1606  0153 	BSF   0x06,PWMOUT
+           0154 			;	bsf PORTB,PWMOUT
+001C 1606  0155 	BSF   0x06,PWMOUT
+           0156 			;	bsf PORTB,PWMOUT
+001D 1606  0157 	BSF   0x06,PWMOUT
+           0158 			;	bsf PORTB,PWMOUT
+001E 1606  0159 	BSF   0x06,PWMOUT
+           0160 			;	bsf PORTB,PWMOUT
+001F 1606  0161 	BSF   0x06,PWMOUT
+           0162 			;	bsf PORTB,PWMOUT
+0020 1606  0163 	BSF   0x06,PWMOUT
+           0164 			;	bsf PORTB,PWMOUT
+0021 1606  0165 	BSF   0x06,PWMOUT
+           0166 			;	bsf PORTB,PWMOUT
+0022 1606  0167 	BSF   0x06,PWMOUT
+           0168 			;	bsf PORTB,PWMOUT
+0023 1606  0169 	BSF   0x06,PWMOUT
+           0170 			;	bsf PORTB,PWMOUT
+0024 1606  0171 	BSF   0x06,PWMOUT
+           0172 			;	bsf PORTB,PWMOUT
+0025 1606  0173 	BSF   0x06,PWMOUT
+           0174 			;	bsf PORTB,PWMOUT
+0026 1606  0175 	BSF   0x06,PWMOUT
+           0176 			;	bsf PORTB,PWMOUT
+0027 1606  0177 	BSF   0x06,PWMOUT
+           0178 			;	bsf PORTB,PWMOUT
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 4
+
+ADDR CODE  LINE SOURCE
+
+0028 1606  0179 	BSF   0x06,PWMOUT
+           0180 			;	bsf PORTB,PWMOUT
+0029 1606  0181 	BSF   0x06,PWMOUT
+           0182 			;	bsf PORTB,PWMOUT
+002A 1606  0183 	BSF   0x06,PWMOUT
+           0184 			;	bsf PORTB,PWMOUT
+002B 1606  0185 	BSF   0x06,PWMOUT
+           0186 			;	bsf PORTB,PWMOUT
+002C 1606  0187 	BSF   0x06,PWMOUT
+           0188 			;	bsf PORTB,PWMOUT
+002D 1606  0189 	BSF   0x06,PWMOUT
+           0190 			;	bsf PORTB,PWMOUT
+002E 1606  0191 	BSF   0x06,PWMOUT
+           0192 			;	bsf PORTB,PWMOUT
+002F 1606  0193 	BSF   0x06,PWMOUT
+           0194 			;	bcf PORTB,PWMOUT
+0030 1206  0195 	BCF   0x06,PWMOUT
+           0196 			;	comf PWMHELP,W
+0031 0914  0197 	COMF  PWMHELP,W
+           0198 			;	addlw PWMADJUSTVAL+5
+0032 3E1B  0199 	ADDLW .27
+           0200 			;	movwf TMR0
+0033 0081  0201 	MOVWF TMR0
+           0202 			;	goto LowImpInt2
+0034 2867  0203 	GOTO  m005
+           0204 			;HighImpInt
+           0205 			;	addlw PWMADJUSTVAL
+0035 3E16  0206 m001	ADDLW .22
+           0207 			;	movwf TMR0
+0036 0081  0208 	MOVWF TMR0
+           0209 			;HighImpInt2
+           0210 			;	bsf PORTB,PWMOUT
+0037 1606  0211 m002	BSF   0x06,PWMOUT
+           0212 			;	movlw PWMMAXVAL-1
+0038 301C  0213 	MOVLW .28
+           0214 			;	movwf PWMMAX
+0039 0095  0215 	MOVWF PWMMAX
+           0216 			;	swapf STACKS,W
+003A 0E0D  0217 	SWAPF STACKS,W
+           0218 			;	movwf STATUS
+003B 0083  0219 	MOVWF STATUS
+           0220 			;	swapf STACKW,W
+003C 0E0C  0221 	SWAPF STACKW,W
+           0222 			;	retfie
+003D 0009  0223 	RETFIE
+           0224 			;Lowpulse
+           0225 			;	comf PWMHELP,W
+003E 0914  0226 m003	COMF  PWMHELP,W
+           0227 			;	addwf PWMMAX,F
+003F 0795  0228 	ADDWF PWMMAX,1
+           0229 			;	btfss STATUS,Carry
+0040 1C03  0230 	BTFSS 0x03,Carry
+           0231 			;	goto LowImpInt
+0041 2865  0232 	GOTO  m004
+           0233 			;LowImpShrt
+           0234 			;	movf PWMMAX,W
+0042 0815  0235 	MOVF  PWMMAX,W
+           0236 			;	addwf PCL,F
+0043 0782  0237 	ADDWF PCL,1
+           0238 			;	bcf PORTB,PWMOUT
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 5
+
+ADDR CODE  LINE SOURCE
+
+0044 1206  0239 	BCF   0x06,PWMOUT
+           0240 			;	bcf PORTB,PWMOUT
+0045 1206  0241 	BCF   0x06,PWMOUT
+           0242 			;	bcf PORTB,PWMOUT
+0046 1206  0243 	BCF   0x06,PWMOUT
+           0244 			;	bcf PORTB,PWMOUT
+0047 1206  0245 	BCF   0x06,PWMOUT
+           0246 			;	bcf PORTB,PWMOUT
+0048 1206  0247 	BCF   0x06,PWMOUT
+           0248 			;	bcf PORTB,PWMOUT
+0049 1206  0249 	BCF   0x06,PWMOUT
+           0250 			;	bcf PORTB,PWMOUT
+004A 1206  0251 	BCF   0x06,PWMOUT
+           0252 			;	bcf PORTB,PWMOUT
+004B 1206  0253 	BCF   0x06,PWMOUT
+           0254 			;	bcf PORTB,PWMOUT
+004C 1206  0255 	BCF   0x06,PWMOUT
+           0256 			;	bcf PORTB,PWMOUT
+004D 1206  0257 	BCF   0x06,PWMOUT
+           0258 			;	bcf PORTB,PWMOUT
+004E 1206  0259 	BCF   0x06,PWMOUT
+           0260 			;	bcf PORTB,PWMOUT
+004F 1206  0261 	BCF   0x06,PWMOUT
+           0262 			;	bcf PORTB,PWMOUT
+0050 1206  0263 	BCF   0x06,PWMOUT
+           0264 			;	bcf PORTB,PWMOUT
+0051 1206  0265 	BCF   0x06,PWMOUT
+           0266 			;	bcf PORTB,PWMOUT
+0052 1206  0267 	BCF   0x06,PWMOUT
+           0268 			;	bcf PORTB,PWMOUT
+0053 1206  0269 	BCF   0x06,PWMOUT
+           0270 			;	bcf PORTB,PWMOUT
+0054 1206  0271 	BCF   0x06,PWMOUT
+           0272 			;	bcf PORTB,PWMOUT
+0055 1206  0273 	BCF   0x06,PWMOUT
+           0274 			;	bcf PORTB,PWMOUT
+0056 1206  0275 	BCF   0x06,PWMOUT
+           0276 			;	bcf PORTB,PWMOUT
+0057 1206  0277 	BCF   0x06,PWMOUT
+           0278 			;	bcf PORTB,PWMOUT
+0058 1206  0279 	BCF   0x06,PWMOUT
+           0280 			;	bcf PORTB,PWMOUT
+0059 1206  0281 	BCF   0x06,PWMOUT
+           0282 			;	bcf PORTB,PWMOUT
+005A 1206  0283 	BCF   0x06,PWMOUT
+           0284 			;	bcf PORTB,PWMOUT
+005B 1206  0285 	BCF   0x06,PWMOUT
+           0286 			;	bcf PORTB,PWMOUT
+005C 1206  0287 	BCF   0x06,PWMOUT
+           0288 			;	bcf PORTB,PWMOUT
+005D 1206  0289 	BCF   0x06,PWMOUT
+           0290 			;	bcf PORTB,PWMOUT
+005E 1206  0291 	BCF   0x06,PWMOUT
+           0292 			;	bsf PORTB,PWMOUT
+005F 1606  0293 	BSF   0x06,PWMOUT
+           0294 			;	comf PWMDESIRED,W
+0060 0913  0295 	COMF  PWMDESIRED,W
+           0296 			;	movwf PWMHELP
+0061 0094  0297 	MOVWF PWMHELP
+           0298 			;	addlw PWMADJUSTVAL+5
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 6
+
+ADDR CODE  LINE SOURCE
+
+0062 3E1B  0299 	ADDLW .27
+           0300 			;	movwf TMR0
+0063 0081  0301 	MOVWF TMR0
+           0302 			;	goto HighImpInt2
+0064 2837  0303 	GOTO  m002
+           0304 			;LowImpInt
+           0305 			;	addlw PWMADJUSTVAL
+0065 3E16  0306 m004	ADDLW .22
+           0307 			;	movwf TMR0
+0066 0081  0308 	MOVWF TMR0
+           0309 			;LowImpInt2
+           0310 			;	bcf PORTB,PWMOUT
+0067 1206  0311 m005	BCF   0x06,PWMOUT
+           0312 			;	movlw PWMMAXVAL
+0068 301D  0313 	MOVLW .29
+           0314 			;	movwf PWMMAX
+0069 0095  0315 	MOVWF PWMMAX
+           0316 			;	swapf STACKS,W
+006A 0E0D  0317 	SWAPF STACKS,W
+           0318 			;	movwf STATUS
+006B 0083  0319 	MOVWF STATUS
+           0320 			;	swapf STACKW,W
+006C 0E0C  0321 	SWAPF STACKW,W
+           0322 			;	retfie
+006D 0009  0323 	RETFIE
+           0324 			;	
+           0325 			;OVERINT
+           0326 			;	bcf PORTA,LOAD
+006E 1185  0327 m006	BCF   0x05,LOAD
+           0328 			;	bcf PORTB,LEDR
+006F 1106  0329 	BCF   0x06,LEDR
+           0330 			;	bcf PORTB,LEDG
+0070 1086  0331 	BCF   0x06,LEDG
+           0332 			;	bcf INTCON,INTE
+0071 120B  0333 	BCF   0x0B,INTE
+           0334 			;	bcf INTCON,INTF
+0072 108B  0335 	BCF   0x0B,INTF
+           0336 			;	movwf STACKW
+0073 008C  0337 	MOVWF STACKW
+           0338 			;	swapf STACKW,F
+0074 0E8C  0339 	SWAPF STACKW,1
+           0340 			;	swapf STATUS,W
+0075 0E03  0341 	SWAPF STATUS,W
+           0342 			;	movwf STACKS
+0076 008D  0343 	MOVWF STACKS
+           0344 			;	clrf delayf
+0077 0197  0345 	CLRF  delayf
+           0346 			;	clrf delaym
+0078 0199  0347 	CLRF  delaym
+           0348 			;	swapf STACKS,W
+0079 0E0D  0349 	SWAPF STACKS,W
+           0350 			;	movwf STATUS
+007A 0083  0351 	MOVWF STATUS
+           0352 			;	swapf STACKW,W
+007B 0E0C  0353 	SWAPF STACKW,W
+           0354 			;	retfie
+007C 0009  0355 	RETFIE
+           0356 			;	
+           0357 			;#endasm
+           0358 			;}
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 7
+
+ADDR CODE  LINE SOURCE
+
+           0359 			;
+           0360 			;
+           0361 			;unsigned char adc()
+           0362 			;{
+           0363 adc
+           0364 			;	union{
+           0365 			;		unsigned long s16;
+           0366 			;		char s8[2];
+           0367 			;	}sum;
+           0368 			;	char temp;
+           0369 			;	char i;
+           0370 			;	sum.s16=0;
+007D 018E  0371 	CLRF  sum
+007E 018F  0372 	CLRF  sum+1
+           0373 			;	ADCON0=0x81;
+007F 3081  0374 	MOVLW .129
+0080 1283  0375 	BCF   0x03,RP0
+0081 0088  0376 	MOVWF ADCON0
+           0377 			;	clrwdt();
+0082 0064  0378 	CLRWDT
+           0379 			;	clrwdt();
+0083 0064  0380 	CLRWDT
+           0381 			;	clrwdt();
+0084 0064  0382 	CLRWDT
+           0383 			;	clrwdt();
+0085 0064  0384 	CLRWDT
+           0385 			;	i=0;
+0086 0191  0386 	CLRF  i
+           0387 			;	do{
+           0388 			;		clrwdt();
+0087 0064  0389 m007	CLRWDT
+           0390 			;		clrwdt();
+0088 0064  0391 	CLRWDT
+           0392 			;		clrwdt();
+0089 0064  0393 	CLRWDT
+           0394 			;		clrwdt();
+008A 0064  0395 	CLRWDT
+           0396 			;		GO=1;
+008B 1283  0397 	BCF   0x03,RP0
+008C 1508  0398 	BSF   0x08,GO
+           0399 			;		while(GO);
+008D 1283  0400 m008	BCF   0x03,RP0
+008E 1908  0401 	BTFSC 0x08,GO
+008F 288D  0402 	GOTO  m008
+           0403 			;		sum.s16+=ADRES;
+0090 0809  0404 	MOVF  ADRES,W
+0091 078E  0405 	ADDWF sum,1
+0092 1803  0406 	BTFSC 0x03,Carry
+0093 0A8F  0407 	INCF  sum+1,1
+           0408 			;		i++;
+0094 0F91  0409 	INCFSZ i,1
+           0410 			;	}while(i!=0);
+0095 2887  0411 	GOTO  m007
+           0412 			;	
+           0413 			;#ifdef TEMP_COMP
+           0414 			;	
+           0415 			;	temp=sum.s8[1];
+0096 080F  0416 	MOVF  sum+1,W
+0097 0090  0417 	MOVWF temp
+           0418 			;	sum.s16=0;
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 8
+
+ADDR CODE  LINE SOURCE
+
+0098 018E  0419 	CLRF  sum
+0099 018F  0420 	CLRF  sum+1
+           0421 			;	ADCON0=0x89;
+009A 3089  0422 	MOVLW .137
+009B 1283  0423 	BCF   0x03,RP0
+009C 0088  0424 	MOVWF ADCON0
+           0425 			;	clrwdt();
+009D 0064  0426 	CLRWDT
+           0427 			;	clrwdt();
+009E 0064  0428 	CLRWDT
+           0429 			;	clrwdt();
+009F 0064  0430 	CLRWDT
+           0431 			;	clrwdt();
+00A0 0064  0432 	CLRWDT
+           0433 			;	i=0;
+00A1 0191  0434 	CLRF  i
+           0435 			;	do{
+           0436 			;		clrwdt();
+00A2 0064  0437 m009	CLRWDT
+           0438 			;		clrwdt();
+00A3 0064  0439 	CLRWDT
+           0440 			;		clrwdt();
+00A4 0064  0441 	CLRWDT
+           0442 			;		clrwdt();
+00A5 0064  0443 	CLRWDT
+           0444 			;		GO=1;
+00A6 1283  0445 	BCF   0x03,RP0
+00A7 1508  0446 	BSF   0x08,GO
+           0447 			;		while(GO);
+00A8 1283  0448 m010	BCF   0x03,RP0
+00A9 1908  0449 	BTFSC 0x08,GO
+00AA 28A8  0450 	GOTO  m010
+           0451 			;		sum.s16+=ADRES;
+00AB 0809  0452 	MOVF  ADRES,W
+00AC 078E  0453 	ADDWF sum,1
+00AD 1803  0454 	BTFSC 0x03,Carry
+00AE 0A8F  0455 	INCF  sum+1,1
+           0456 			;		i++;
+00AF 0F91  0457 	INCFSZ i,1
+           0458 			;	}while(i!=0);
+00B0 28A2  0459 	GOTO  m009
+           0460 			;	sum.s8[0]=comp_value(sum.s8[1]);
+00B1 080F  0461 	MOVF  sum+1,W
+00B2 2102  0462 	CALL  comp_value
+00B3 008E  0463 	MOVWF sum
+           0464 			;	sum.s8[1]=sum.s8[0]+temp;
+00B4 0810  0465 	MOVF  temp,W
+00B5 070E  0466 	ADDWF sum,W
+00B6 008F  0467 	MOVWF sum+1
+           0468 			;	
+           0469 			;#endif
+           0470 			;	return sum.s8[1];
+00B7 080F  0471 	MOVF  sum+1,W
+00B8 0008  0472 	RETURN
+           0473 			;}
+           0474 			;
+           0475 			;void adjust(void)
+           0476 			;{
+           0477 adjust
+           0478 			;	if(voltage>=HVD){
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 9
+
+ADDR CODE  LINE SOURCE
+
+00B9 30D6  0479 	MOVLW .214
+00BA 021B  0480 	SUBWF voltage,W
+00BB 1C03  0481 	BTFSS 0x03,Carry
+00BC 28C6  0482 	GOTO  m012
+           0483 			;		if(delay==DELAYTIMES){
+00BD 0816  0484 	MOVF  delay,W
+00BE 3A96  0485 	XORLW .150
+00BF 1D03  0486 	BTFSS 0x03,Zero_
+00C0 28C5  0487 	GOTO  m011
+           0488 			;			if(PWMDESIRED!=0xff)PWMDESIRED++;
+00C1 0F13  0489 	INCFSZ PWMDESIRED,W
+00C2 0A93  0490 	INCF  PWMDESIRED,1
+           0491 			;			delay=0;
+00C3 0196  0492 	CLRF  delay
+           0493 			;		}
+           0494 			;		else delay++;
+00C4 28C6  0495 	GOTO  m012
+00C5 0A96  0496 m011	INCF  delay,1
+           0497 			;	}
+           0498 			;	if(voltage>=FULL){
+00C6 30C1  0499 m012	MOVLW .193
+00C7 021B  0500 	SUBWF voltage,W
+00C8 1C03  0501 	BTFSS 0x03,Carry
+00C9 28D7  0502 	GOTO  m014
+           0503 			;		if(delayf==DELAYTIMES){
+00CA 0817  0504 	MOVF  delayf,W
+00CB 3A96  0505 	XORLW .150
+00CC 1D03  0506 	BTFSS 0x03,Zero_
+00CD 28D6  0507 	GOTO  m013
+           0508 			;			ledstatus=FULL;
+00CE 30C1  0509 	MOVLW .193
+00CF 009A  0510 	MOVWF ledstatus
+           0511 			;			delayl=0;
+00D0 0198  0512 	CLRF  delayl
+           0513 			;			delaym=0;
+00D1 0199  0514 	CLRF  delaym
+           0515 			;			LOAD=1;
+00D2 1283  0516 	BCF   0x03,RP0
+00D3 1585  0517 	BSF   0x05,LOAD
+           0518 			;			INTE=1;
+00D4 160B  0519 	BSF   0x0B,INTE
+           0520 			;		}
+           0521 			;		else delayf++;
+00D5 28D7  0522 	GOTO  m014
+00D6 0A97  0523 m013	INCF  delayf,1
+           0524 			;	}
+           0525 			;	if(voltage<LOW){
+00D7 309E  0526 m014	MOVLW .158
+00D8 021B  0527 	SUBWF voltage,W
+00D9 1803  0528 	BTFSC 0x03,Carry
+00DA 28EA  0529 	GOTO  m016
+           0530 			;		if(delayl==DELAYTIMES){
+00DB 0818  0531 	MOVF  delayl,W
+00DC 3A96  0532 	XORLW .150
+00DD 1D03  0533 	BTFSS 0x03,Zero_
+00DE 28E9  0534 	GOTO  m015
+           0535 			;			ledstatus=LOW;
+00DF 309E  0536 	MOVLW .158
+00E0 009A  0537 	MOVWF ledstatus
+           0538 			;			delayf=0;
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 10
+
+ADDR CODE  LINE SOURCE
+
+00E1 0197  0539 	CLRF  delayf
+           0540 			;			delaym=0;
+00E2 0199  0541 	CLRF  delaym
+           0542 			;			PWMDESIRED=0;
+00E3 0193  0543 	CLRF  PWMDESIRED
+           0544 			;			PWMOUT=0;
+00E4 1283  0545 	BCF   0x03,RP0
+00E5 1206  0546 	BCF   0x06,PWMOUT
+           0547 			;			INTE=0;
+00E6 120B  0548 	BCF   0x0B,INTE
+           0549 			;			LOAD=0;
+00E7 1185  0550 	BCF   0x05,LOAD
+           0551 			;		}
+           0552 			;		else delayl++;
+00E8 28EA  0553 	GOTO  m016
+00E9 0A98  0554 m015	INCF  delayl,1
+           0555 			;	}
+           0556 			;	if(voltage>=LOW &&voltage<FULL){
+00EA 309E  0557 m016	MOVLW .158
+00EB 021B  0558 	SUBWF voltage,W
+00EC 1C03  0559 	BTFSS 0x03,Carry
+00ED 2901  0560 	GOTO  m018
+00EE 30C1  0561 	MOVLW .193
+00EF 021B  0562 	SUBWF voltage,W
+00F0 1803  0563 	BTFSC 0x03,Carry
+00F1 2901  0564 	GOTO  m018
+           0565 			;		if(delaym==DELAYTIMES){
+00F2 0819  0566 	MOVF  delaym,W
+00F3 3A96  0567 	XORLW .150
+00F4 1D03  0568 	BTFSS 0x03,Zero_
+00F5 2900  0569 	GOTO  m017
+           0570 			;			ledstatus=MID;
+00F6 30B4  0571 	MOVLW .180
+00F7 009A  0572 	MOVWF ledstatus
+           0573 			;			delayl=0;
+00F8 0198  0574 	CLRF  delayl
+           0575 			;			delayf=0;
+00F9 0197  0576 	CLRF  delayf
+           0577 			;			PWMDESIRED=0;
+00FA 0193  0578 	CLRF  PWMDESIRED
+           0579 			;			PWMOUT=0;
+00FB 1283  0580 	BCF   0x03,RP0
+00FC 1206  0581 	BCF   0x06,PWMOUT
+           0582 			;			LOAD=1;
+00FD 1585  0583 	BSF   0x05,LOAD
+           0584 			;			INTE=1;
+00FE 160B  0585 	BSF   0x0B,INTE
+           0586 			;		}
+           0587 			;		else delaym++;
+00FF 2901  0588 	GOTO  m018
+0100 0A99  0589 m017	INCF  delaym,1
+           0590 			;	}
+           0591 			;}
+0101 0008  0592 m018	RETURN
+           0593 
+           0594   ; FILE RT_COMP.C
+           0595 			;unsigned char comp_value(unsigned char index)
+           0596 			;{
+           0597 comp_value
+0102 0092  0598 	MOVWF index
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 11
+
+ADDR CODE  LINE SOURCE
+
+           0599 			;    if(index<50)return 0;
+0103 3032  0600 	MOVLW .50
+0104 0212  0601 	SUBWF index,W
+0105 1C03  0602 	BTFSS 0x03,Carry
+0106 3400  0603 	RETLW .0
+           0604 			;    if(index>227)return 0;
+0107 30E4  0605 	MOVLW .228
+0108 0212  0606 	SUBWF index,W
+0109 1803  0607 	BTFSC 0x03,Carry
+010A 3400  0608 	RETLW .0
+           0609 			;    index-=50;
+010B 3032  0610 	MOVLW .50
+010C 0292  0611 	SUBWF index,1
+           0612 			;    PCLATH=1;
+010D 3001  0613 	MOVLW .1
+010E 008A  0614 	MOVWF PCLATH
+           0615 			;    PCL+=index;
+010F 0812  0616 	MOVF  index,W
+0110 0782  0617 	ADDWF PCL,1
+           0618 			;    return 243 ;
+0111 34F3  0619 	RETLW .243
+           0620 			;    return 244 ;
+0112 34F4  0621 	RETLW .244
+           0622 			;    return 244 ;
+0113 34F4  0623 	RETLW .244
+           0624 			;    return 244 ;
+0114 34F4  0625 	RETLW .244
+           0626 			;    return 245 ;
+0115 34F5  0627 	RETLW .245
+           0628 			;    return 245 ;
+0116 34F5  0629 	RETLW .245
+           0630 			;    return 245 ;
+0117 34F5  0631 	RETLW .245
+           0632 			;    return 245 ;
+0118 34F5  0633 	RETLW .245
+           0634 			;    return 245 ;
+0119 34F5  0635 	RETLW .245
+           0636 			;    return 246 ;
+011A 34F6  0637 	RETLW .246
+           0638 			;    return 246 ;
+011B 34F6  0639 	RETLW .246
+           0640 			;    return 246 ;
+011C 34F6  0641 	RETLW .246
+           0642 			;    return 246 ;
+011D 34F6  0643 	RETLW .246
+           0644 			;    return 247 ;
+011E 34F7  0645 	RETLW .247
+           0646 			;    return 247 ;
+011F 34F7  0647 	RETLW .247
+           0648 			;    return 247 ;
+0120 34F7  0649 	RETLW .247
+           0650 			;    return 247 ;
+0121 34F7  0651 	RETLW .247
+           0652 			;    return 247 ;
+0122 34F7  0653 	RETLW .247
+           0654 			;    return 248 ;
+0123 34F8  0655 	RETLW .248
+           0656 			;    return 248 ;
+0124 34F8  0657 	RETLW .248
+           0658 			;    return 248 ;
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 12
+
+ADDR CODE  LINE SOURCE
+
+0125 34F8  0659 	RETLW .248
+           0660 			;    return 248 ;
+0126 34F8  0661 	RETLW .248
+           0662 			;    return 248 ;
+0127 34F8  0663 	RETLW .248
+           0664 			;    return 249 ;
+0128 34F9  0665 	RETLW .249
+           0666 			;    return 249 ;
+0129 34F9  0667 	RETLW .249
+           0668 			;    return 249 ;
+012A 34F9  0669 	RETLW .249
+           0670 			;    return 249 ;
+012B 34F9  0671 	RETLW .249
+           0672 			;    return 249 ;
+012C 34F9  0673 	RETLW .249
+           0674 			;    return 249 ;
+012D 34F9  0675 	RETLW .249
+           0676 			;    return 250 ;
+012E 34FA  0677 	RETLW .250
+           0678 			;    return 250 ;
+012F 34FA  0679 	RETLW .250
+           0680 			;    return 250 ;
+0130 34FA  0681 	RETLW .250
+           0682 			;    return 250 ;
+0131 34FA  0683 	RETLW .250
+           0684 			;    return 250 ;
+0132 34FA  0685 	RETLW .250
+           0686 			;    return 250 ;
+0133 34FA  0687 	RETLW .250
+           0688 			;    return 251 ;
+0134 34FB  0689 	RETLW .251
+           0690 			;    return 251 ;
+0135 34FB  0691 	RETLW .251
+           0692 			;    return 251 ;
+0136 34FB  0693 	RETLW .251
+           0694 			;    return 251 ;
+0137 34FB  0695 	RETLW .251
+           0696 			;    return 251 ;
+0138 34FB  0697 	RETLW .251
+           0698 			;    return 251 ;
+0139 34FB  0699 	RETLW .251
+           0700 			;    return 252 ;
+013A 34FC  0701 	RETLW .252
+           0702 			;    return 252 ;
+013B 34FC  0703 	RETLW .252
+           0704 			;    return 252 ;
+013C 34FC  0705 	RETLW .252
+           0706 			;    return 252 ;
+013D 34FC  0707 	RETLW .252
+           0708 			;    return 252 ;
+013E 34FC  0709 	RETLW .252
+           0710 			;    return 252 ;
+013F 34FC  0711 	RETLW .252
+           0712 			;    return 253 ;
+0140 34FD  0713 	RETLW .253
+           0714 			;    return 253 ;
+0141 34FD  0715 	RETLW .253
+           0716 			;    return 253 ;
+0142 34FD  0717 	RETLW .253
+           0718 			;    return 253 ;
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 13
+
+ADDR CODE  LINE SOURCE
+
+0143 34FD  0719 	RETLW .253
+           0720 			;    return 253 ;
+0144 34FD  0721 	RETLW .253
+           0722 			;    return 253 ;
+0145 34FD  0723 	RETLW .253
+           0724 			;    return 253 ;
+0146 34FD  0725 	RETLW .253
+           0726 			;    return 254 ;
+0147 34FE  0727 	RETLW .254
+           0728 			;    return 254 ;
+0148 34FE  0729 	RETLW .254
+           0730 			;    return 254 ;
+0149 34FE  0731 	RETLW .254
+           0732 			;    return 254 ;
+014A 34FE  0733 	RETLW .254
+           0734 			;    return 254 ;
+014B 34FE  0735 	RETLW .254
+           0736 			;    return 254 ;
+014C 34FE  0737 	RETLW .254
+           0738 			;    return 254 ;
+014D 34FE  0739 	RETLW .254
+           0740 			;    return 255 ;
+014E 34FF  0741 	RETLW .255
+           0742 			;    return 255 ;
+014F 34FF  0743 	RETLW .255
+           0744 			;    return 255 ;
+0150 34FF  0745 	RETLW .255
+           0746 			;    return 255 ;
+0151 34FF  0747 	RETLW .255
+           0748 			;    return 255 ;
+0152 34FF  0749 	RETLW .255
+           0750 			;    return 255 ;
+0153 34FF  0751 	RETLW .255
+           0752 			;    return 255 ;
+0154 34FF  0753 	RETLW .255
+           0754 			;    return 255 ;
+0155 34FF  0755 	RETLW .255
+           0756 			;    return 0 ;
+0156 3400  0757 	RETLW .0
+           0758 			;    return 0 ;
+0157 3400  0759 	RETLW .0
+           0760 			;    return 0 ;
+0158 3400  0761 	RETLW .0
+           0762 			;    return 0 ;
+0159 3400  0763 	RETLW .0
+           0764 			;    return 0 ;
+015A 3400  0765 	RETLW .0
+           0766 			;    return 0 ;
+015B 3400  0767 	RETLW .0
+           0768 			;    return 0 ;
+015C 3400  0769 	RETLW .0
+           0770 			;    return 1 ;
+015D 3401  0771 	RETLW .1
+           0772 			;    return 1 ;
+015E 3401  0773 	RETLW .1
+           0774 			;    return 1 ;
+015F 3401  0775 	RETLW .1
+           0776 			;    return 1 ;
+0160 3401  0777 	RETLW .1
+           0778 			;    return 1 ;
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 14
+
+ADDR CODE  LINE SOURCE
+
+0161 3401  0779 	RETLW .1
+           0780 			;    return 1 ;
+0162 3401  0781 	RETLW .1
+           0782 			;    return 1 ;
+0163 3401  0783 	RETLW .1
+           0784 			;    return 1 ;
+0164 3401  0785 	RETLW .1
+           0786 			;    return 2 ;
+0165 3402  0787 	RETLW .2
+           0788 			;    return 2 ;
+0166 3402  0789 	RETLW .2
+           0790 			;    return 2 ;
+0167 3402  0791 	RETLW .2
+           0792 			;    return 2 ;
+0168 3402  0793 	RETLW .2
+           0794 			;    return 2 ;
+0169 3402  0795 	RETLW .2
+           0796 			;    return 2 ;
+016A 3402  0797 	RETLW .2
+           0798 			;    return 2 ;
+016B 3402  0799 	RETLW .2
+           0800 			;    return 2 ;
+016C 3402  0801 	RETLW .2
+           0802 			;    return 3 ;
+016D 3403  0803 	RETLW .3
+           0804 			;    return 3 ;
+016E 3403  0805 	RETLW .3
+           0806 			;    return 3 ;
+016F 3403  0807 	RETLW .3
+           0808 			;    return 3 ;
+0170 3403  0809 	RETLW .3
+           0810 			;    return 3 ;
+0171 3403  0811 	RETLW .3
+           0812 			;    return 3 ;
+0172 3403  0813 	RETLW .3
+           0814 			;    return 3 ;
+0173 3403  0815 	RETLW .3
+           0816 			;    return 3 ;
+0174 3403  0817 	RETLW .3
+           0818 			;    return 4 ;
+0175 3404  0819 	RETLW .4
+           0820 			;    return 4 ;
+0176 3404  0821 	RETLW .4
+           0822 			;    return 4 ;
+0177 3404  0823 	RETLW .4
+           0824 			;    return 4 ;
+0178 3404  0825 	RETLW .4
+           0826 			;    return 4 ;
+0179 3404  0827 	RETLW .4
+           0828 			;    return 4 ;
+017A 3404  0829 	RETLW .4
+           0830 			;    return 4 ;
+017B 3404  0831 	RETLW .4
+           0832 			;    return 5 ;
+017C 3405  0833 	RETLW .5
+           0834 			;    return 5 ;
+017D 3405  0835 	RETLW .5
+           0836 			;    return 5 ;
+017E 3405  0837 	RETLW .5
+           0838 			;    return 5 ;
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 15
+
+ADDR CODE  LINE SOURCE
+
+017F 3405  0839 	RETLW .5
+           0840 			;    return 5 ;
+0180 3405  0841 	RETLW .5
+           0842 			;    return 5 ;
+0181 3405  0843 	RETLW .5
+           0844 			;    return 5 ;
+0182 3405  0845 	RETLW .5
+           0846 			;    return 5 ;
+0183 3405  0847 	RETLW .5
+           0848 			;    return 6 ;
+0184 3406  0849 	RETLW .6
+           0850 			;    return 6 ;
+0185 3406  0851 	RETLW .6
+           0852 			;    return 6 ;
+0186 3406  0853 	RETLW .6
+           0854 			;    return 6 ;
+0187 3406  0855 	RETLW .6
+           0856 			;    return 6 ;
+0188 3406  0857 	RETLW .6
+           0858 			;    return 6 ;
+0189 3406  0859 	RETLW .6
+           0860 			;    return 6 ;
+018A 3406  0861 	RETLW .6
+           0862 			;    return 6 ;
+018B 3406  0863 	RETLW .6
+           0864 			;    return 7 ;
+018C 3407  0865 	RETLW .7
+           0866 			;    return 7 ;
+018D 3407  0867 	RETLW .7
+           0868 			;    return 7 ;
+018E 3407  0869 	RETLW .7
+           0870 			;    return 7 ;
+018F 3407  0871 	RETLW .7
+           0872 			;    return 7 ;
+0190 3407  0873 	RETLW .7
+           0874 			;    return 7 ;
+0191 3407  0875 	RETLW .7
+           0876 			;    return 7 ;
+0192 3407  0877 	RETLW .7
+           0878 			;    return 8 ;
+0193 3408  0879 	RETLW .8
+           0880 			;    return 8 ;
+0194 3408  0881 	RETLW .8
+           0882 			;    return 8 ;
+0195 3408  0883 	RETLW .8
+           0884 			;    return 8 ;
+0196 3408  0885 	RETLW .8
+           0886 			;    return 8 ;
+0197 3408  0887 	RETLW .8
+           0888 			;    return 8 ;
+0198 3408  0889 	RETLW .8
+           0890 			;    return 8 ;
+0199 3408  0891 	RETLW .8
+           0892 			;    return 8 ;
+019A 3408  0893 	RETLW .8
+           0894 			;    return 9 ;
+019B 3409  0895 	RETLW .9
+           0896 			;    return 9 ;
+019C 3409  0897 	RETLW .9
+           0898 			;    return 9 ;
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 16
+
+ADDR CODE  LINE SOURCE
+
+019D 3409  0899 	RETLW .9
+           0900 			;    return 9 ;
+019E 3409  0901 	RETLW .9
+           0902 			;    return 9 ;
+019F 3409  0903 	RETLW .9
+           0904 			;    return 9 ;
+01A0 3409  0905 	RETLW .9
+           0906 			;    return 10 ;
+01A1 340A  0907 	RETLW .10
+           0908 			;    return 10 ;
+01A2 340A  0909 	RETLW .10
+           0910 			;    return 10 ;
+01A3 340A  0911 	RETLW .10
+           0912 			;    return 10 ;
+01A4 340A  0913 	RETLW .10
+           0914 			;    return 10 ;
+01A5 340A  0915 	RETLW .10
+           0916 			;    return 10 ;
+01A6 340A  0917 	RETLW .10
+           0918 			;    return 10 ;
+01A7 340A  0919 	RETLW .10
+           0920 			;    return 11 ;
+01A8 340B  0921 	RETLW .11
+           0922 			;    return 11 ;
+01A9 340B  0923 	RETLW .11
+           0924 			;    return 11 ;
+01AA 340B  0925 	RETLW .11
+           0926 			;    return 11 ;
+01AB 340B  0927 	RETLW .11
+           0928 			;    return 11 ;
+01AC 340B  0929 	RETLW .11
+           0930 			;    return 11 ;
+01AD 340B  0931 	RETLW .11
+           0932 			;    return 12 ;
+01AE 340C  0933 	RETLW .12
+           0934 			;    return 12 ;
+01AF 340C  0935 	RETLW .12
+           0936 			;    return 12 ;
+01B0 340C  0937 	RETLW .12
+           0938 			;    return 12 ;
+01B1 340C  0939 	RETLW .12
+           0940 			;    return 12 ;
+01B2 340C  0941 	RETLW .12
+           0942 			;    return 12 ;
+01B3 340C  0943 	RETLW .12
+           0944 			;    return 13 ;
+01B4 340D  0945 	RETLW .13
+           0946 			;    return 13 ;
+01B5 340D  0947 	RETLW .13
+           0948 			;    return 13 ;
+01B6 340D  0949 	RETLW .13
+           0950 			;    return 13 ;
+01B7 340D  0951 	RETLW .13
+           0952 			;    return 13 ;
+01B8 340D  0953 	RETLW .13
+           0954 			;    return 14 ;
+01B9 340E  0955 	RETLW .14
+           0956 			;    return 14 ;
+01BA 340E  0957 	RETLW .14
+           0958 			;    return 14 ;
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 17
+
+ADDR CODE  LINE SOURCE
+
+01BB 340E  0959 	RETLW .14
+           0960 			;    return 14 ;
+01BC 340E  0961 	RETLW .14
+           0962 			;    return 14 ;
+01BD 340E  0963 	RETLW .14
+           0964 			;    return 15 ;
+01BE 340F  0965 	RETLW .15
+           0966 			;    return 15 ;
+01BF 340F  0967 	RETLW .15
+           0968 			;    return 15 ;
+01C0 340F  0969 	RETLW .15
+           0970 			;    return 15 ;
+01C1 340F  0971 	RETLW .15
+           0972 			;    return 16 ;
+01C2 3410  0973 	RETLW .16
+           0974 
+           0975   ; FILE F:\PRODUCT\SMART\PROGRAM\SMART.C
+           0976 			;	
+           0977 			;#ifdef TEMP_COMP
+           0978 			;#include "RT_COMP.C"
+           0979 			;#endif
+           0980 			;
+           0981 			;void LEDflash(void){
+           0982 LEDflash
+           0983 			;	switch(ledstatus){
+01C3 081A  0984 	MOVF  ledstatus,W
+01C4 3A9E  0985 	XORLW .158
+01C5 1903  0986 	BTFSC 0x03,Zero_
+01C6 29CE  0987 	GOTO  m019
+01C7 3A2A  0988 	XORLW .42
+01C8 1903  0989 	BTFSC 0x03,Zero_
+01C9 29D2  0990 	GOTO  m020
+01CA 3A75  0991 	XORLW .117
+01CB 1903  0992 	BTFSC 0x03,Zero_
+01CC 29D6  0993 	GOTO  m021
+01CD 29D9  0994 	GOTO  m022
+           0995 			;		case LOW:{
+           0996 			;			LEDR=1;
+01CE 1283  0997 m019	BCF   0x03,RP0
+01CF 1506  0998 	BSF   0x06,LEDR
+           0999 			;			LEDG=0;
+01D0 1086  1000 	BCF   0x06,LEDG
+           1001 			;			break;
+01D1 29D9  1002 	GOTO  m022
+           1003 			;		}
+           1004 			;		case MID:{
+           1005 			;			LEDR=1;
+01D2 1283  1006 m020	BCF   0x03,RP0
+01D3 1506  1007 	BSF   0x06,LEDR
+           1008 			;			LEDG=1;
+01D4 1486  1009 	BSF   0x06,LEDG
+           1010 			;			break;
+01D5 29D9  1011 	GOTO  m022
+           1012 			;		}
+           1013 			;		case FULL:{
+           1014 			;			LEDR=0;
+01D6 1283  1015 m021	BCF   0x03,RP0
+01D7 1106  1016 	BCF   0x06,LEDR
+           1017 			;			LEDG=1;
+01D8 1486  1018 	BSF   0x06,LEDG
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 18
+
+ADDR CODE  LINE SOURCE
+
+           1019 			;			break;
+           1020 			;		}
+           1021 			;	}
+           1022 			;	if(PWMDESIRED==0xff)LED_CHARGE=0;
+01D9 0F13  1023 m022	INCFSZ PWMDESIRED,W
+01DA 29DE  1024 	GOTO  m023
+01DB 1283  1025 	BCF   0x03,RP0
+01DC 1105  1026 	BCF   0x05,LED_CHARGE
+           1027 			;	else LED_CHARGE=1;
+01DD 29E0  1028 	GOTO  m024
+01DE 1283  1029 m023	BCF   0x03,RP0
+01DF 1505  1030 	BSF   0x05,LED_CHARGE
+           1031 			;}
+01E0 0008  1032 m024	RETURN
+           1033 			;	
+           1034 			;void main(void)
+           1035 			;{
+           1036 main
+           1037 			;	TRISA=0x13;
+01E1 3013  1038 	MOVLW .19
+01E2 1683  1039 	BSF   0x03,RP0
+01E3 0085  1040 	MOVWF TRISA
+           1041 			;	TRISB=0xe9;
+01E4 30E9  1042 	MOVLW .233
+01E5 0086  1043 	MOVWF TRISB
+           1044 			;	LOAD=0;
+01E6 1283  1045 	BCF   0x03,RP0
+01E7 1185  1046 	BCF   0x05,LOAD
+           1047 			;	PWMDESIRED=0;
+01E8 0193  1048 	CLRF  PWMDESIRED
+           1049 			;	PWMOUT=1;
+01E9 1606  1050 	BSF   0x06,PWMOUT
+           1051 			;	OPTION=0xf;
+01EA 300F  1052 	MOVLW .15
+01EB 1683  1053 	BSF   0x03,RP0
+01EC 0081  1054 	MOVWF OPTION_REG
+           1055 			;	ADCON1=2;
+01ED 3002  1056 	MOVLW .2
+01EE 0088  1057 	MOVWF ADCON1
+           1058 			;	INTCON=0xa0;
+01EF 30A0  1059 	MOVLW .160
+01F0 008B  1060 	MOVWF INTCON
+           1061 			;	
+           1062 			;	
+           1063 			;	LEDR=0;
+01F1 1283  1064 	BCF   0x03,RP0
+01F2 1106  1065 	BCF   0x06,LEDR
+           1066 			;	LEDG=0;
+01F3 1086  1067 	BCF   0x06,LEDG
+           1068 			;	LED_CHARGE=1;
+01F4 1505  1069 	BSF   0x05,LED_CHARGE
+           1070 			;	
+           1071 			;	while(1){
+           1072 			;		clrwdt();
+01F5 0064  1073 m025	CLRWDT
+           1074 			;		voltage=adc();
+01F6 207D  1075 	CALL  adc
+01F7 009B  1076 	MOVWF voltage
+           1077 			;		adjust();
+01F8 20B9  1078 	CALL  adjust
+CC5X Version 3.1C,   File: F:\PRODUCT\SMART\PROGRAM\SMART.C 27. Jul 2002  15:54   Page 19
+
+ADDR CODE  LINE SOURCE
+
+           1079 			;		LEDflash();
+01F9 21C3  1080 	CALL  LEDflash
+           1081 			;	}
+01FA 29F5  1082 	GOTO  m025
+           1083 
+     0000  1084 	END

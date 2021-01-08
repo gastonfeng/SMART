@@ -1,0 +1,29 @@
+
+CC5X Version 3.1C, Copyright (c) B Knudsen Data.
+* FUNCTION CALL STRUCTURE
+
+F: int_server             :#0 
+
+F: adc                    :#1 
+    comp_value            : #1 
+
+F: adjust                 :#1 
+
+F: comp_value             :#1 
+
+F: LEDflash               :#1 
+
+F: main                   :#0 
+    adc                   : #1 
+    adjust                : #1 
+    LEDflash              : #1 
+
+
+ L1  int_server
+
+ L0  main
+ L1    adc
+ L2      comp_value
+ L1    adjust
+ L1    LEDflash
+
